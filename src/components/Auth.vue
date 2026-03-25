@@ -6,7 +6,7 @@
         <WalletIcon size="40" class="text-white" />
       </div>
       <h1 class="text-3xl font-bold text-white mb-2">SYT Wallet</h1>
-      <p class="text-gray-400">محفظتك الرقمية للتحويلات والإحالات</p>
+      <p class="text-gray-400">محفظتك الرقمية للتحويلات الذكية</p>
     </div>
 
     <!-- حالة التحميل -->
