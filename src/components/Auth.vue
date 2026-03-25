@@ -78,7 +78,7 @@ export default {
         checkTelegramAuth()
       } else {
         // إذا خارج Telegram، نفتح البوت
-        window.location.href = 'https://t.me/SYT_Wallet_Test_bot'
+        window.location.href = 'https://t.me/SYT_Wallet_bot'
       }
     }
 
