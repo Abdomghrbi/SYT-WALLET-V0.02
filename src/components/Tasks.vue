@@ -194,4 +194,146 @@ export default {
         }
 
         // إدراج المهمة
-        const { error: taskError
+        const { error: taskError } = await supabase
+          .from('user_tasks')
+          .insert({
+            user_id: props.user.id,
+            task_id: SIGNUP_TASK_ID,
+            status: 'completed',
+            completed_at: nowISO,
+            claimed_at: nowISO,
+            reward_claimed: SIGNUP_REWARD
+          })
+
+        if (taskError) throw new Error('task: ' + taskError.message)
+
+        // ✅ إضافة المعاملة كـ task_earning (لتفعيل أرباح المحيل)
+        const { error: txError } = await supabase
+          .from('transactions')
+          .insert({
+            user_id: props.user.id,
+            type: 'task_earning',
+            amount: SIGNUP_REWARD,
+            status: 'completed',
+            description: 'مكافأة التسجيل - مهمة ترحيبية',
+            created_at: nowISO
+          })
+
+        if (txError) console.error('خطأ بتسجيل المعاملة:', txError)
+
+        // تحديث الرصيد
+        const { data: userData, error: fetchError } = await supabase
+          .from('users')
+          .select('balance, total_earned')
+          .eq('id', props.user.id)
+          .single()
+
+        if (fetchError) throw new Error('fetch: ' + fetchError.message)
+
+        const newBalance = parseFloat(userData.balance || 0) + SIGNUP_REWARD
+        const newTotalEarned = parseFloat(userData.total_earned || 0) + SIGNUP_REWARD
+
+        const { error: updateError } = await supabase
+          .from('users')
+          .update({ balance: newBalance, total_earned: newTotalEarned })
+          .eq('id', props.user.id)
+
+        if (updateError) throw new Error('update: ' + updateError.message)
+
+        // تحديث المحلي
+        props.user.balance = newBalance
+        props.user.total_earned = newTotalEarned
+        signupClaimed.value = true
+
+      } catch (e) {
+        errorMessage.value = e.message || 'حدث خطأ'
+      } finally {
+        loadingSignup.value = false
+      }
+    }
+
+    // ✅ استلام المكافأة اليومية + تسجيل المعاملة كـ task_earning
+    const claimDailyReward = async () => {
+      if (!canClaimDaily.value || loadingDaily.value) return
+
+      loadingDaily.value = true
+      errorMessage.value = ''
+
+      try {
+        const nowISO = new Date().toISOString()
+
+        // إدراج المهمة
+        const { error: taskError } = await supabase
+          .from('user_tasks')
+          .insert({
+            user_id: props.user.id,
+            task_id: DAILY_TASK_ID,
+            status: 'completed',
+            completed_at: nowISO,
+            claimed_at: nowISO,
+            reward_claimed: DAILY_REWARD
+          })
+
+        if (taskError) throw new Error('task: ' + taskError.message)
+
+        // ✅ إضافة المعاملة كـ task_earning (لتفعيل أرباح المحيل)
+        const { error: txError } = await supabase
+          .from('transactions')
+          .insert({
+            user_id: props.user.id,
+            type: 'task_earning',
+            amount: DAILY_REWARD,
+            status: 'completed',
+            description: 'مكافأة يومية - تسجيل الدخول',
+            created_at: nowISO
+          })
+
+        if (txError) console.error('خطأ بتسجيل المعاملة:', txError)
+
+        // تحديث الرصيد
+        const { data: userData, error: fetchError } = await supabase
+          .from('users')
+          .select('balance, total_earned')
+          .eq('id', props.user.id)
+          .single()
+
+        if (fetchError) throw new Error('fetch: ' + fetchError.message)
+
+        const newBalance = parseFloat(userData.balance || 0) + DAILY_REWARD
+        const newTotalEarned = parseFloat(userData.total_earned || 0) + DAILY_REWARD
+
+        const { error: updateError } = await supabase
+          .from('users')
+          .update({ balance: newBalance, total_earned: newTotalEarned })
+          .eq('id', props.user.id)
+
+        if (updateError) throw new Error('update: ' + updateError.message)
+
+        // تحديث المحلي
+        props.user.balance = newBalance
+        props.user.total_earned = newTotalEarned
+        lastDailyClaimed.value = new Date()
+        dailyJustClaimed.value = true
+
+      } catch (e) {
+        errorMessage.value = e.message || 'حدث خطأ'
+      } finally {
+        loadingDaily.value = false
+      }
+    }
+
+    return {
+      signupClaimed,
+      loadingSignup,
+      claimSignupReward,
+      loading,
+      loadingDaily,
+      canClaimDaily,
+      dailyJustClaimed,
+      dailyStatusText,
+      claimDailyReward,
+      errorMessage
+    }
+  }
+}
+</script>
